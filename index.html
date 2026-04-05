@@ -219,7 +219,7 @@
     position: relative;
     width: min(640px, 92vw);
     aspect-ratio: 4 / 3;
-    background: var(--color-surface);
+    background: linear-gradient(180deg, #87ceeb 0%, #87ceeb 60%, #5dade2 60%, #2e86c1 100%);
     border: 1px solid var(--color-border);
     border-radius: var(--radius-lg);
     box-shadow: var(--shadow-lg);
@@ -227,7 +227,35 @@
     animation: fadeScaleIn 0.4s ease both;
   }
 
+  /* Map decoration */
+  .map-bg {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    pointer-events: none;
+  }
+  .map-bg .island {
+    position: absolute;
+    border-radius: 40%;
+    background: linear-gradient(135deg, #27ae60, #2ecc71);
+    box-shadow: inset 0 -4px 8px rgba(0,0,0,.15);
+  }
+  .map-bg .island:nth-child(1) { width: 35%; height: 50%; top: 10%; left: 50%; border-radius: 30% 50% 40% 60%; transform: rotate(-15deg); }
+  .map-bg .island:nth-child(2) { width: 15%; height: 20%; top: 55%; left: 35%; border-radius: 50% 30% 60% 40%; transform: rotate(10deg); }
+  .map-bg .island:nth-child(3) { width: 20%; height: 15%; top: 65%; left: 20%; border-radius: 40% 60% 30% 50%; transform: rotate(-5deg); }
+  .map-bg .island:nth-child(4) { width: 10%; height: 25%; top: 5%; left: 65%; border-radius: 50% 40% 50% 30%; transform: rotate(5deg); }
+  .map-bg .cloud {
+    position: absolute;
+    background: rgba(255,255,255,.5);
+    border-radius: 50%;
+  }
+  .map-bg .cloud:nth-of-type(5) { width: 60px; height: 25px; top: 12%; left: 8%; }
+  .map-bg .cloud:nth-of-type(6) { width: 80px; height: 30px; top: 22%; left: 78%; }
+  .map-bg .cloud:nth-of-type(7) { width: 50px; height: 20px; top: 72%; left: 5%; }
+
   .panel-grid {
+    position: relative;
+    z-index: 1;
     width: 100%;
     height: 100%;
     display: grid;
@@ -265,7 +293,7 @@
   }
   .panel .back {
     transform: rotateY(180deg);
-    background: var(--color-accent);
+    background: transparent;
   }
 
   .panel.winner {
@@ -400,6 +428,15 @@
 <!-- ===== Roulette screen ===== -->
 <div id="rouletteScreen" class="screen" aria-hidden="true">
   <div class="board">
+    <div class="map-bg">
+      <div class="island"></div>
+      <div class="island"></div>
+      <div class="island"></div>
+      <div class="island"></div>
+      <div class="cloud"></div>
+      <div class="cloud"></div>
+      <div class="cloud"></div>
+    </div>
     <div class="panel-grid" id="grid"></div>
   </div>
   <div class="controls">
