@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>桃鉄風ルーレット</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+
+  @keyframes popIn{0%{transform:scale(0) rotate(-10deg);opacity:0}60%{transform:scale(1.1) rotate(2deg);opacity:1}100%{transform:scale(1) rotate(0);opacity:1}}
+  @keyframes bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
+  @keyframes resultSlam{0%{transform:scale(3) rotate(-5deg);opacity:0}60%{transform:scale(.95) rotate(1deg);opacity:1}100%{transform:scale(1) rotate(0);opacity:1}}
+  @keyframes confetti{0%{transform:translateY(0) rotate(0);opacity:1}100%{transform:translateY(100vh) rotate(720deg);opacity:0}}
+  @keyframes tvGlow{0%,100%{box-shadow:0 0 30px rgba(255,200,100,.4),inset 0 0 60px rgba(135,206,250,.15)}50%{box-shadow:0 0 50px rgba(255,200,100,.6),inset 0 0 80px rgba(135,206,250,.25)}}
+  @keyframes winnerPulse{0%,100%{transform:scale(1.05);box-shadow:0 0 20px gold,0 0 40px orange}50%{transform:scale(1.12);box-shadow:0 0 40px gold,0 0 80px orange}}
+
+  body{
+    font-family:'Hiragino Kaku Gothic ProN','Meiryo','Yu Gothic',sans-serif;
+    min-height:100vh;
+    background:#1a5276;
+    background-image:
+      radial-gradient(circle at 30% 40%, rgba(100,200,255,.15) 0%, transparent 50%),
+      radial-gradient(circle at 70% 60%, rgba(255,200,100,.1) 0%, transparent 50%);
+    display:flex;align-items:center;justify-content:center;
+    overflow:hidden;
+  }
+
+  .screen{display:none;flex-direction:column;align-items:center;justify-content:center;width:100%;min-height:100vh;padding:20px;position:relative}
+  .screen.active{display:flex}
+
+  /* ===== 入力画面 ===== */
+  .input-screen .title-area{
+    text-align:center;margin-bottom:24px;animation:popIn .5s ease;
+  }
+  .input-screen .title-area h1{
+    font-size:clamp(2rem,6vw,3.2rem);color:#fff;
+    text-shadow:3px 3px 0 #c0392b,6px 6px 0 rgba(0,0,0,.2);
+    letter-spacing:4px;
+  }
+  .input-screen .title-area p{font-size:1rem;color:rgba(255,255,255,.7);margin-top:8px}
+
+  .input-container{
+    background:rgba(255,255,255,.95);border-radius:20px;padding:28px;
+    width:min(500px,92vw);box-shadow:0 8px 32px rgba(0,0,0,.3);
+    animation:popIn .5s ease .1s both;border:4px solid #f39c12;
+  }
+  .input-row{display:flex;gap:10px;margin-bottom:12px}
+  .input-row input{
+    flex:1;padding:12px 16px;border:3px solid #f5b041;border-radius:12px;
+    font-size:1rem;outline:none;transition:.2s;font-family:inherit;
+    background:#fffbf0;
+  }
+  .input-row input:focus{border-color:#e74c3c;box-shadow:0 0 12px rgba(231,76,60,.3)}
+  .input-row input::placeholder{color:#ccc}
+  .add-btn{
+    padding:12px 18px;background:linear-gradient(180deg,#e74c3c,#c0392b);
+    color:#fff;border:2px solid #922b21;border-radius:12px;font-size:1.3rem;cursor:pointer;
+    transition:.2s;flex-shrink:0;text-shadow:1px 1px 0 rgba(0,0,0,.3);
+  }
+  .add-btn:hover{transform:scale(1.1);box-shadow:0 4px 12px rgba(231,76,60,.4)}
+
+  .choices-list{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0;min-height:40px}
+  .choice-tag{
+    display:flex;align-items:center;gap:6px;
+    background:linear-gradient(135deg,#ffeaa7,#fdcb6e);
+    padding:8px 14px;border-radius:16px;font-size:.95rem;font-weight:bold;
+    box-shadow:0 2px 8px rgba(0,0,0,.1);animation:popIn .3s ease;
+    border:2px solid #f39c12;color:#2c3e50;
+  }
+  .choice-tag .remove{
+    cursor:pointer;color:#e74c3c;font-weight:bold;font-size:1.1rem;
+    width:22px;height:22px;display:flex;align-items:center;justify-content:center;
+    border-radius:50%;transition:.2s;
+  }
+  .choice-tag .remove:hover{background:rgba(231,76,60,.15)}
+
+  .start-btn{
+    display:block;width:100%;padding:16px;margin-top:10px;
+    background:linear-gradient(180deg,#e74c3c,#c0392b);
+    color:#fff;border:3px solid #922b21;border-radius:14px;font-size:1.4rem;
+    font-weight:bold;cursor:pointer;letter-spacing:4px;
+    transition:.2s;box-shadow:0 4px 16px rgba(192,57,43,.4);
+    text-shadow:2px 2px 0 rgba(0,0,0,.3);
+  }
+  .start-btn:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(192,57,43,.5)}
+  .start-btn:disabled{opacity:.4;cursor:default;transform:none;box-shadow:none}
+
+  /* ===== ルーレット画面 ===== */
+  .roulette-screen{padding:20px}
+
+  /* TVフレーム */
+  .tv-frame{
+    position:relative;
+    width:min(720px,94vw);aspect-ratio:16/10;
+    background:linear-gradient(180deg,#f39c12,#e74c3c,#f39c12);
+    border-radius:28px;padding:14px;
+    box-shadow:0 10px 40px rgba(0,0,0,.5),inset 0 2px 4px rgba(255,255,255,.3);
+    animation:popIn .5s ease;
+  }
+  .tv-frame::before{
+    content:'';position:absolute;top:4px;left:4px;right:4px;bottom:4px;
+    border-radius:24px;
+    background:linear-gradient(180deg,rgba(255,255,255,.2),transparent,rgba(255,255,255,.1));
+    pointer-events:none;z-index:20;
+  }
+
+  .tv-screen{
+    width:100%;height:100%;border-radius:16px;overflow:hidden;position:relative;
+    background:linear-gradient(180deg,#87ceeb 0%,#87ceeb 60%,#5dade2 60%,#2e86c1 100%);
+    animation:tvGlow 3s ease infinite;
+  }
+
+  /* 日本地図風の装飾 */
+  .map-bg{
+    position:absolute;top:0;left:0;width:100%;height:100%;
+    overflow:hidden;pointer-events:none;
+  }
+  .map-bg .island{
+    position:absolute;border-radius:40%;
+    background:linear-gradient(135deg,#27ae60,#2ecc71);
+    box-shadow:inset 0 -4px 8px rgba(0,0,0,.15);
+  }
+  .map-bg .island:nth-child(1){width:35%;height:50%;top:10%;left:50%;border-radius:30% 50% 40% 60%;transform:rotate(-15deg)}
+  .map-bg .island:nth-child(2){width:15%;height:20%;top:55%;left:35%;border-radius:50% 30% 60% 40%;transform:rotate(10deg)}
+  .map-bg .island:nth-child(3){width:20%;height:15%;top:65%;left:20%;border-radius:40% 60% 30% 50%;transform:rotate(-5deg)}
+  .map-bg .island:nth-child(4){width:10%;height:25%;top:5%;left:65%;border-radius:50% 40% 50% 30%;transform:rotate(5deg)}
+  .map-bg .cloud{
+    position:absolute;background:rgba(255,255,255,.5);border-radius:50%;
+  }
+  .map-bg .cloud:nth-of-type(5){width:60px;height:25px;top:12%;left:8%}
+  .map-bg .cloud:nth-of-type(6){width:80px;height:30px;top:22%;left:78%}
+  .map-bg .cloud:nth-of-type(7){width:50px;height:20px;top:72%;left:5%}
+
+  /* 方角マーク */
+  .direction-mark{
+    position:absolute;top:10px;left:14px;z-index:15;
+    font-size:clamp(1.6rem,3.5vw,2.4rem);font-weight:900;color:#1a5276;
+    text-shadow:2px 2px 0 rgba(255,255,255,.5);
+    opacity:.5;
+  }
+
+  /* 4x4パネルグリッド */
+  .panel-grid{
+    position:absolute;top:0;left:0;width:100%;height:100%;z-index:10;
+    display:grid;grid-template-columns:repeat(4,1fr);grid-template-rows:repeat(4,1fr);
+    gap:0;padding:0;
+  }
+
+  .panel-wrapper{perspective:400px}
+  .panel{
+    position:relative;width:100%;height:100%;
+    transform-style:preserve-3d;
+    border-radius:0;cursor:default;
+    transition:none;
+  }
+  .panel .face{
+    position:absolute;top:0;left:0;width:100%;height:100%;
+    border-radius:0;display:flex;align-items:center;justify-content:center;
+    font-size:clamp(.7rem,2vw,1.1rem);font-weight:900;color:#fff;
+    text-shadow:1px 1px 2px rgba(0,0,0,.4);
+    backface-visibility:hidden;padding:4px;text-align:center;
+    word-break:break-all;line-height:1.3;overflow:hidden;
+    border:none;
+  }
+  .panel .front{
+    background:rgba(255,255,255,.85);
+    color:#2c3e50;
+    text-shadow:none;
+    box-shadow:0 2px 8px rgba(0,0,0,.15);
+  }
+  .panel .back{
+    background:rgba(255,255,255,.85);
+    color:#2c3e50;
+    text-shadow:none;
+    transform:rotateY(180deg);
+    box-shadow:0 2px 8px rgba(0,0,0,.15);
+    visibility:hidden;
+  }
+
+  .panel.stopped{
+    transition:transform .5s cubic-bezier(.25,.46,.45,.94);
+  }
+  .panel.winner{
+    animation:winnerPulse .8s ease infinite;z-index:10;
+    border:3px solid gold;border-radius:0;
+  }
+
+  /* コントロール */
+  .controls{text-align:center;margin-top:20px;display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+  .stop-btn,.back-btn,.retry-btn{
+    padding:14px 40px;border:none;border-radius:14px;
+    font-size:1.2rem;font-weight:bold;cursor:pointer;
+    letter-spacing:3px;transition:.2s;font-family:inherit;
+    text-shadow:1px 1px 0 rgba(0,0,0,.2);
+  }
+  .stop-btn{
+    background:linear-gradient(180deg,#27ae60,#1e8449);color:#fff;
+    border:3px solid #145a32;
+    box-shadow:0 4px 16px rgba(39,174,96,.4);
+  }
+  .stop-btn:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(39,174,96,.5)}
+  .stop-btn:disabled{opacity:.4;cursor:default;transform:none}
+  .back-btn{
+    background:linear-gradient(180deg,#8e44ad,#6c3483);color:#fff;
+    border:3px solid #4a235a;
+    box-shadow:0 4px 16px rgba(142,68,173,.3);
+  }
+  .back-btn:hover{transform:translateY(-2px)}
+  .retry-btn{
+    background:linear-gradient(180deg,#e67e22,#ca6f1e);color:#fff;
+    border:3px solid #935116;
+    box-shadow:0 4px 16px rgba(230,126,34,.3);
+  }
+  .retry-btn:hover{transform:translateY(-2px)}
+
+  /* ===== 結果オーバーレイ ===== */
+  .result-overlay{
+    display:none;position:fixed;top:0;left:0;width:100%;height:100%;
+    background:rgba(0,0,0,.6);z-index:100;
+    align-items:center;justify-content:center;flex-direction:column;
+  }
+  .result-overlay.active{display:flex}
+  .result-box{
+    position:relative;
+    background:linear-gradient(180deg,#fdf2e9,#fdebd0);
+    border:6px solid #e74c3c;
+    border-radius:20px;padding:50px 60px;text-align:center;
+    animation:resultSlam .5s cubic-bezier(.17,.67,.35,1.2);
+    box-shadow:0 0 60px rgba(231,76,60,.4),0 0 120px rgba(243,156,18,.3);
+    max-width:90vw;
+  }
+  .result-box::before{
+    content:'';position:absolute;top:-3px;left:-3px;right:-3px;bottom:-3px;
+    border-radius:23px;
+    background:linear-gradient(135deg,#f39c12,#e74c3c,#f39c12,#e74c3c);
+    z-index:-1;
+  }
+  .result-box .label{
+    font-size:1.3rem;color:#e74c3c;margin-bottom:12px;font-weight:bold;
+    letter-spacing:4px;
+  }
+  .result-box .value{
+    font-size:clamp(2.5rem,8vw,4.5rem);color:#c0392b;font-weight:900;
+    text-shadow:3px 3px 0 rgba(0,0,0,.1);letter-spacing:6px;
+    animation:bounce 1s ease infinite;
+  }
+  .result-box .close-result{
+    margin-top:24px;padding:12px 36px;
+    background:linear-gradient(180deg,#e74c3c,#c0392b);color:#fff;
+    border:2px solid #922b21;border-radius:12px;font-size:1.1rem;font-weight:bold;
+    cursor:pointer;transition:.2s;font-family:inherit;
+    text-shadow:1px 1px 0 rgba(0,0,0,.2);letter-spacing:2px;
+  }
+  .result-box .close-result:hover{transform:scale(1.05)}
+
+  /* 紙吹雪 */
+  .confetti-piece{
+    position:fixed;top:-20px;width:12px;height:12px;z-index:101;
+    border-radius:3px;animation:confetti linear forwards;pointer-events:none;
+  }
+
+  /* ===== レスポンシブ ===== */
+  @media(max-width:480px){
+    .input-container{padding:18px}
+    .tv-frame{padding:8px;border-radius:18px}
+    .panel-grid{gap:0;padding:0}
+    .panel .face{font-size:.6rem}
+    .panel{border-radius:0}
+    .controls{gap:8px}
+    .stop-btn,.back-btn,.retry-btn{padding:12px 24px;font-size:1rem}
+    .result-box{padding:32px 24px}
+  }
+</style>
+</head>
+<body>
+
+<!-- ===== 入力画面 ===== -->
+<div id="inputScreen" class="screen input-screen active">
+  <div class="title-area">
+    <h1>目的地ルーレット</h1>
+    <p>行き先の候補を入力して、ルーレットで決めよう！</p>
+  </div>
+  <div class="input-container">
+    <div class="input-row">
+      <input type="text" id="choiceInput" placeholder="候補を入力（例：長野、仙台、日光…）" maxlength="30">
+      <button class="add-btn" id="addBtn" title="追加">＋</button>
+    </div>
+    <div class="choices-list" id="choicesList"></div>
+    <button class="start-btn" id="startBtn" disabled>ルーレット スタート！</button>
+  </div>
+</div>
+
+<!-- ===== ルーレット画面 ===== -->
+<div id="rouletteScreen" class="screen roulette-screen">
+  <div class="tv-frame">
+    <div class="tv-screen">
+      <div class="map-bg">
+        <div class="island"></div>
+        <div class="island"></div>
+        <div class="island"></div>
+        <div class="island"></div>
+        <div class="cloud"></div>
+        <div class="cloud"></div>
+        <div class="cloud"></div>
+      </div>
+      <div class="direction-mark">東</div>
+      <div class="panel-grid" id="grid"></div>
+    </div>
+  </div>
+  <div class="controls">
+    <button class="stop-btn" id="stopBtn">ストップ！</button>
+    <button class="retry-btn" id="retryBtn" style="display:none">もう一回！</button>
+    <button class="back-btn" id="backBtn">もどる</button>
+  </div>
+</div>
+
+<!-- ===== 結果オーバーレイ ===== -->
+<div class="result-overlay" id="resultOverlay">
+  <div class="result-box">
+    <div class="label">目的地決定！</div>
+    <div class="value" id="resultValue"></div>
+    <button class="close-result" id="closeResult">OK！</button>
+  </div>
+</div>
+
+<script>
+(function(){
+  const PANEL_COUNT = 16;
+  const COLORS = [
+    ['#e74c3c','#c0392b'],['#f39c12','#e67e22'],['#27ae60','#1e8449'],
+    ['#2980b9','#2471a3'],['#8e44ad','#7d3c98'],['#1abc9c','#17a589'],
+    ['#d35400','#ba4a00'],['#2c3e50','#1b2631'],['#e74c3c','#922b21'],
+    ['#f1c40f','#d4ac0d'],['#3498db','#2e86c1'],['#e67e22','#ca6f1e'],
+    ['#9b59b6','#884ea0'],['#1abc9c','#148f77'],['#e74c3c','#cb4335'],
+    ['#2ecc71','#28b463']
+  ];
+
+  let choices = [];
+  let panels = [];
+  let spinIntervals = [];
+  let isStopping = false;
+
+  const $ = s => document.querySelector(s);
+  const choiceInput = $('#choiceInput');
+  const choicesList = $('#choicesList');
+  const startBtn = $('#startBtn');
+  const addBtn = $('#addBtn');
+  const grid = $('#grid');
+  const stopBtn = $('#stopBtn');
+  const retryBtn = $('#retryBtn');
+  const backBtn = $('#backBtn');
+  const resultOverlay = $('#resultOverlay');
+  const resultValue = $('#resultValue');
+  const closeResult = $('#closeResult');
+
+  function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+
+  function addChoice(){
+    const v = choiceInput.value.trim();
+    if(!v || choices.includes(v)) return;
+    choices.push(v);
+    choiceInput.value = '';
+    renderChoices();
+    choiceInput.focus();
+  }
+
+  function removeChoice(i){
+    choices.splice(i,1);
+    renderChoices();
+  }
+
+  function renderChoices(){
+    choicesList.innerHTML = '';
+    choices.forEach((c,i)=>{
+      const tag = document.createElement('div');
+      tag.className = 'choice-tag';
+      tag.innerHTML = `<span>${esc(c)}</span><span class="remove" data-i="${i}">✕</span>`;
+      choicesList.appendChild(tag);
+    });
+    choicesList.querySelectorAll('.remove').forEach(el=>{
+      el.addEventListener('click', ()=> removeChoice(+el.dataset.i));
+    });
+    startBtn.disabled = choices.length < 2;
+  }
+
+  addBtn.addEventListener('click', addChoice);
+  choiceInput.addEventListener('keydown', e=>{ if(e.key==='Enter') addChoice(); });
+
+  startBtn.addEventListener('click', ()=>{
+    if(choices.length < 2) return;
+    $('#inputScreen').classList.remove('active');
+    $('#rouletteScreen').classList.add('active');
+    initRoulette();
+  });
+
+  backBtn.addEventListener('click', ()=>{
+    stopAllSpins();
+    $('#rouletteScreen').classList.remove('active');
+    $('#inputScreen').classList.add('active');
+    resultOverlay.classList.remove('active');
+    retryBtn.style.display = 'none';
+    stopBtn.style.display = '';
+    stopBtn.disabled = false;
+  });
+
+  retryBtn.addEventListener('click', ()=>{
+    retryBtn.style.display = 'none';
+    stopBtn.style.display = '';
+    stopBtn.disabled = false;
+    resultOverlay.classList.remove('active');
+    document.querySelectorAll('.confetti-piece').forEach(e=>e.remove());
+    initRoulette();
+  });
+
+  closeResult.addEventListener('click', ()=>{
+    resultOverlay.classList.remove('active');
+  });
+
+  function initRoulette(){
+    stopAllSpins();
+    isStopping = false;
+    grid.innerHTML = '';
+    panels = [];
+    spinIntervals = [];
+
+    // 各パネルにランダムに選択肢を割り当て
+    const assigned = [];
+    for(let i=0;i<PANEL_COUNT;i++) assigned.push(choices[i % choices.length]);
+    shuffle(assigned);
+
+    for(let i=0;i<PANEL_COUNT;i++){
+      const wrapper = document.createElement('div');
+      wrapper.className = 'panel-wrapper';
+      const panel = document.createElement('div');
+      panel.className = 'panel';
+
+      const ci = i % COLORS.length;
+      const ci2 = (i+7) % COLORS.length;
+      panel.style.setProperty('--c1', COLORS[ci][0]);
+      panel.style.setProperty('--c2', COLORS[ci][1]);
+      panel.style.setProperty('--c3', COLORS[ci2][0]);
+      panel.style.setProperty('--c4', COLORS[ci2][1]);
+
+      const front = document.createElement('div');
+      front.className = 'face front';
+      front.textContent = assigned[i];
+      const back = document.createElement('div');
+      back.className = 'face back';
+      back.textContent = choices[Math.floor(Math.random()*choices.length)];
+
+      panel.appendChild(front);
+      panel.appendChild(back);
+      wrapper.appendChild(panel);
+      grid.appendChild(wrapper);
+
+      panels.push({el:panel, front, back, finalChoice:assigned[i], angle:0, stopped:false});
+    }
+
+    // 同時に表を向くのは最大3枚
+    const MAX_FACE_UP = 3;
+    let faceUpSet = new Set();
+
+    // 全パネル裏向きでスタート
+    panels.forEach(p=>{
+      p.angle = 180;
+      p.el.style.transform = `rotateY(180deg)`;
+    });
+
+    // ランダムに表裏を切り替えるループ
+    const flipInterval = 200;
+    const mainId = setInterval(()=>{
+      // 表向きのパネルをランダムに裏返す
+      for(const idx of faceUpSet){
+        if(Math.random() < 0.4){
+          const p = panels[idx];
+          p.angle = 180;
+          p.el.style.transition = 'transform 0.15s ease-in';
+          p.el.style.transform = `rotateY(180deg)`;
+          // テキストを次に表にする時用に変更
+          p.front.textContent = choices[Math.floor(Math.random()*choices.length)];
+          faceUpSet.delete(idx);
+        }
+      }
+
+      // 空き枠があればランダムなパネルを表にする
+      const candidates = [];
+      for(let i=0;i<PANEL_COUNT;i++) if(!faceUpSet.has(i) && !panels[i].stopped) candidates.push(i);
+      shuffle(candidates);
+
+      while(faceUpSet.size < MAX_FACE_UP && candidates.length > 0){
+        const idx = candidates.pop();
+        const p = panels[idx];
+        p.front.textContent = choices[Math.floor(Math.random()*choices.length)];
+        p.angle = 0;
+        p.el.style.transition = 'transform 0.15s ease-out';
+        p.el.style.transform = `rotateY(0deg)`;
+        faceUpSet.add(idx);
+      }
+    }, flipInterval);
+    spinIntervals.push(mainId);
+
+    // ポップインアニメーション
+    grid.querySelectorAll('.panel-wrapper').forEach((w,i)=>{
+      w.style.animation = `popIn .4s ease ${i*0.03}s both`;
+    });
+  }
+
+  stopBtn.addEventListener('click', ()=>{
+    if(isStopping) return;
+    isStopping = true;
+    stopBtn.disabled = true;
+
+    // スピン停止
+    stopAllSpins();
+
+    // ランダムに当選パネルを選ぶ
+    const winnerIdx = Math.floor(Math.random()*PANEL_COUNT);
+    const winner = panels[winnerIdx];
+
+    // 全パネル裏向きにする
+    panels.forEach(p=>{
+      p.stopped = true;
+      p.angle = 180;
+      p.el.style.transition = 'transform 0.4s ease-in';
+      p.el.style.transform = `rotateY(180deg)`;
+    });
+
+    // 少し間を置いて当選パネルだけ表にする
+    setTimeout(()=>{
+      winner.front.textContent = winner.finalChoice;
+      winner.angle = 0;
+      winner.el.style.transition = 'transform 0.6s cubic-bezier(0.25,0.46,0.45,0.94)';
+      winner.el.style.transform = `rotateY(0deg)`;
+      winner.el.classList.add('stopped');
+
+      setTimeout(()=>{
+        winner.el.classList.add('winner');
+        showResult(winner.finalChoice);
+      }, 700);
+    }, 600);
+  });
+
+  function showResult(text){
+    resultValue.textContent = text;
+    resultOverlay.classList.add('active');
+    spawnConfetti();
+    stopBtn.style.display = 'none';
+    retryBtn.style.display = '';
+  }
+
+  function spawnConfetti(){
+    const colors = ['#e74c3c','#f39c12','#27ae60','#2980b9','#8e44ad','#f1c40f','#e67e22','#1abc9c'];
+    for(let i=0;i<60;i++){
+      const el = document.createElement('div');
+      el.className = 'confetti-piece';
+      el.style.left = Math.random()*100+'vw';
+      el.style.background = colors[Math.floor(Math.random()*colors.length)];
+      el.style.animationDuration = (2+Math.random()*3)+'s';
+      el.style.animationDelay = (Math.random()*1.5)+'s';
+      el.style.width = (6+Math.random()*10)+'px';
+      el.style.height = (6+Math.random()*10)+'px';
+      el.style.borderRadius = Math.random()>.5?'50%':'2px';
+      document.body.appendChild(el);
+      setTimeout(()=>el.remove(), 6000);
+    }
+  }
+
+  function stopAllSpins(){
+    spinIntervals.forEach(id=>clearInterval(id));
+    spinIntervals = [];
+  }
+
+  function shuffle(a){
+    for(let i=a.length-1;i>0;i--){
+      const j=Math.floor(Math.random()*(i+1));
+      [a[i],a[j]]=[a[j],a[i]];
+    }
+  }
+})();
+</script>
+</body>
+</html>
