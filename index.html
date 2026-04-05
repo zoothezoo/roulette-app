@@ -951,8 +951,10 @@
     dom.stopBtn.disabled = true;
     stopAnimation();
 
+    var winnerChoice = state.choices[(Math.random() * state.choices.length) | 0];
     var winnerIdx = (Math.random() * PANEL_COUNT) | 0;
     var winner = state.panels[winnerIdx];
+    winner.finalChoice = winnerChoice;
 
     // All panels face-down
     state.panels.forEach(function (p) {
