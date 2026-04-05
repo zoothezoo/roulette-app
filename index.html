@@ -510,16 +510,16 @@
 
     <div class="input-mode active" id="modeSingle" role="tabpanel">
       <div class="input-row">
-        <input type="text" id="choiceInput" placeholder="候補を入力（6文字まで）" maxlength="6" aria-label="候補の入力">
+        <input type="text" id="choiceInput" placeholder="候補を入力（20文字まで）" maxlength="20" aria-label="候補の入力">
         <button class="add-btn" id="addBtn" aria-label="候補を追加">+</button>
       </div>
       <div class="char-count" id="charCount">0 / 6</div>
     </div>
 
     <div class="input-mode" id="modeBulk" role="tabpanel">
-      <textarea class="bulk-textarea" id="bulkInput" placeholder="1行に1つずつ入力（6文字/行、最大25行）&#10;例:&#10;長野&#10;仙台&#10;日光" aria-label="一括入力"></textarea>
+      <textarea class="bulk-textarea" id="bulkInput" placeholder="1行に1つずつ入力（20文字/行、最大100行）&#10;例:&#10;長野&#10;仙台&#10;日光" aria-label="一括入力"></textarea>
       <div class="bulk-info">
-        <span id="bulkCount">0 / 25 行</span>
+        <span id="bulkCount">0 / 100 行</span>
         <span id="bulkError"></span>
       </div>
       <button class="bulk-apply-btn" id="bulkApplyBtn" disabled>候補に反映</button>
@@ -566,8 +566,8 @@
 
   // ===== Constants =====
   var PANEL_COUNT = 16;
-  var MAX_CHOICES = 25;
-  var MAX_CHAR = 6;
+  var MAX_CHOICES = 100;
+  var MAX_CHAR = 20;
   var MAX_FACE_UP = 3;
   var FLIP_DURATION = 450; // ms
 
