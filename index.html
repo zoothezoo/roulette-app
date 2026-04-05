@@ -483,6 +483,55 @@
   }
   .result-box .close-btn:hover { transform: scale(1.03); box-shadow: var(--shadow-md); }
 
+  /* ===== Candidate list on roulette screen ===== */
+  .candidate-list {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    padding: 16px;
+    margin-top: 16px;
+    width: min(600px, 92vw);
+    max-height: 200px;
+    overflow-y: auto;
+  }
+  .candidate-list-title {
+    font-size: 0.8rem;
+    color: var(--color-text-light);
+    font-weight: 600;
+    letter-spacing: 2px;
+    margin-bottom: 10px;
+  }
+  .candidate-items {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .candidate-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 12px;
+    border-radius: 100px;
+    font-size: 0.82rem;
+    font-weight: 500;
+    border: 1px solid var(--color-border);
+    background: var(--color-bg);
+    color: var(--color-text);
+  }
+  .candidate-item .win-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--color-accent);
+    color: #fff;
+    font-size: 0.7rem;
+    font-weight: 700;
+    min-width: 20px;
+    height: 20px;
+    padding: 0 5px;
+    border-radius: 100px;
+  }
+
   /* ===== Responsive ===== */
   @media (max-width: 480px) {
     .input-container { padding: 18px; }
@@ -544,6 +593,10 @@
     </div>
     <div class="panel-grid" id="grid"></div>
   </div>
+  <div class="candidate-list" id="candidateList">
+    <div class="candidate-list-title">候補一覧</div>
+    <div class="candidate-items" id="candidateItems"></div>
+  </div>
   <div class="controls">
     <button class="btn btn--stop" id="stopBtn">ストップ</button>
     <button class="btn btn--retry" id="retryBtn" hidden>もう一回</button>
@@ -574,6 +627,7 @@
   // ===== State =====
   var state = {
     choices: [],
+    winCounts: {},
     panels: [],
     isStopping: false,
     animFrameId: null,
@@ -605,6 +659,7 @@
     bulkCount:     document.getElementById('bulkCount'),
     bulkError:     document.getElementById('bulkError'),
     bulkApplyBtn:  document.getElementById('bulkApplyBtn'),
+    candidateItems: document.getElementById('candidateItems'),
   };
 
   // ===== Utilities =====
@@ -761,6 +816,7 @@
 
   dom.backBtn.addEventListener('click', function () {
     stopAnimation();
+    state.winCounts = {};
     showScreen(dom.inputScreen);
     dom.resultOverlay.setAttribute('aria-hidden', 'true');
     dom.retryBtn.hidden = true;
@@ -831,6 +887,7 @@
     state.faceUpSet.clear();
     state.lastFlipTime = 0;
     buildGrid();
+    renderCandidateList();
     state.animFrameId = requestAnimationFrame(animationLoop);
   }
 
@@ -917,7 +974,28 @@
     }, 550);
   });
 
+  function renderCandidateList() {
+    var frag = document.createDocumentFragment();
+    state.choices.forEach(function (c) {
+      var item = document.createElement('span');
+      item.className = 'candidate-item';
+      item.textContent = c;
+      var count = state.winCounts[c] || 0;
+      if (count > 0) {
+        var badge = document.createElement('span');
+        badge.className = 'win-badge';
+        badge.textContent = count;
+        item.appendChild(badge);
+      }
+      frag.appendChild(item);
+    });
+    dom.candidateItems.textContent = '';
+    dom.candidateItems.appendChild(frag);
+  }
+
   function showResult(text) {
+    state.winCounts[text] = (state.winCounts[text] || 0) + 1;
+    renderCandidateList();
     dom.resultValue.textContent = text;
     dom.resultOverlay.setAttribute('aria-hidden', 'false');
     dom.stopBtn.hidden = true;
